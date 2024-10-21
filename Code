@@ -1,0 +1,126 @@
+Code:
+//Import Servo library
+#include <Servo.h>
+
+//Horizontal Servo
+Servo horizontal;
+int servoHorz = 90;
+int servoHorzLimitHigh = 175;
+int servoHorzLimitLow = 5;
+//Vertical Servo
+Servo vertical;
+int servoVert = 90;
+int servoVertLimitHigh = 1;
+int servoVertLimitLow = 100;
+
+//LDR Pin Connections
+const int bottomLeft = A0;
+const int bottomRight = A1;
+const int topLeft = A2;
+const int topRight = A3;
+//LED Pin Connections
+const int rLed = 7;
+const int yLed = 6;
+const int gLed = 5;
+
+void setup(){
+  horizontal.attach(13); //Attach horizontal servo to pin 13
+  horizontal.write(180); //Set horz servo position to 180 degrees
+  vertical.attach(12); //Attach vertical servo to pin 12
+  vertical.write(45); //Set vert servo position to 45 degrees
+  
+  //set LEDS as output
+  pinMode(rLed, OUTPUT);
+  pinMode(yLed, OUTPUT);
+  pinMode(gLed, OUTPUT);
+  //LDRs as input
+  pinMode(bottomLeft, INPUT);
+  pinMode(bottomRight, INPUT);
+  pinMode(topLeft, INPUT);
+  pinMode(topRight, INPUT);
+  
+  delay(2000); //delay 2s
+}
+
+void loop(){
+  //read analog pins for LDR
+  int bL = analogRead(bottomLeft);
+  int bR = analogRead(bottomRight);
+  int tL = analogRead(topLeft);
+  int tR = analogRead(topRight);
+  
+  int timeDif = 10; //difference in time
+  int tol = 90;     //tolerance
+  
+  int avgTop = (tL + tR) / 2; // average value top
+  int avgBottom = (bL + bR) / 2; // average value down
+  int avgLeft = (tL + bL) / 2; // average value left
+  int avgRight = (tR + bR) / 2; // average value right
+  int difVert = avgTop - avgBottom; // check the difference of up and down
+  int difHorz = avgLeft - avgRight;// check the difference of left and right
+
+  //Change position of servo motor depending on average and difference of LDR values
+  if (-1*tol > difVert || difVert > tol){
+    //Calculate the position of the vertical motor
+    if (avgTop < avgBottom){ //if average of top ldr is greater than bottom ldr avg
+      servoVert -= servoVert;
+      if (servoVert < servoVertLimitHigh){ 
+        servoVert = servoVertLimitHigh;
+      }
+    }
+    else if (avgTop > avgBottom){ //if avg of top ldr is less than bottom ldr avg
+      servoVert += servoVert;
+      if (servoVert > servoVertLimitLow){
+        servoVert = servoVertLimitLow;
+        }
+      }
+      vertical.write(servoVert);
+    }
+   
+
+  //Calculate the position of the servo motor depending on averafe and difference of LDR values
+  if (-1*tol > difHorz || difHorz > tol){
+    //Calculate position of horizontal motor
+    if (avgLeft > avgRight){
+      servoHorz -= servoHorz;
+      if (servoHorz < servoHorzLimitLow){
+        servoHorz = servoHorzLimitLow;
+      }
+    }
+    else if (avgLeft < avgRight){
+      servoHorz += servoHorz;
+      if (servoHorz > servoHorzLimitHigh){
+        servoHorz = servoHorzLimitHigh;
+      }
+    }
+    else if (avgLeft = avgRight){
+      delay(5000);
+    }
+    horizontal.write(servoHorz);
+  }
+  delay(timeDif);
+  
+  //Light up LEDS depending on light intake
+  int ldrValueTotal = (bL + bR + tL + tR); //Adds up amount of light taken in 
+ 
+  if (ldrValueTotal >= 3069){ //sends  5V to all LEDS
+    digitalWrite(rLed, HIGH);
+    digitalWrite(yLed, HIGH);
+    digitalWrite(gLed, HIGH); 
+  }
+  else if (ldrValueTotal <= 3069 && ldrValueTotal >= 2046){ //sends 5V up 2 LEDS
+    digitalWrite(rLed, HIGH);
+    digitalWrite(yLed, HIGH);
+    digitalWrite(gLed, LOW);   
+  }
+  else if (ldrValueTotal <= 2046 && ldrValueTotal >= 1023 ){ //sends 5V up 1 LED
+    digitalWrite(rLed, HIGH);
+    digitalWrite(yLed, LOW);
+    digitalWrite(gLed, LOW);    
+  }
+  else if(ldrValueTotal <= 1023){ //send 0V to LEDS
+    digitalWrite(rLed, LOW);
+    digitalWrite(yLed, LOW);
+    digitalWrite(gLed, LOW);   
+  }
+}
